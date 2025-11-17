@@ -1,109 +1,28 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Moon, Star, Heart, Sparkles, RotateCcw, Minus, Plus, Sun, Calendar, ArrowRight, X } from 'lucide-react';
+import { Moon, Star, Heart, Sparkles, RotateCcw, Minus, Plus, Sun, Calendar, ArrowRight, X, Wifi, WifiOff } from 'lucide-react';
 
 const TasbihCounter = () => {
   const [mounted, setMounted] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     setMounted(true);
     
-    // Register Service Worker for PWA - Only on HTTPS or localhost
-    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-      const swCode = `
-const CACHE_NAME = 'tasbih-counter-v2';
-
-self.addEventListener('install', event => {
-  console.log('Service Worker installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('Cache opened');
-      // Cache will be populated as resources are fetched
-      return Promise.resolve();
-    })
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('fetch', event => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
-  
-  // Skip chrome-extension and other non-http(s) requests
-  if (!event.request.url.startsWith('http')) return;
-
-  event.respondWith(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.match(event.request).then(cachedResponse => {
-        // Return cached response if found
-        if (cachedResponse) {
-          console.log('Serving from cache:', event.request.url);
-          return cachedResponse;
-        }
-
-        // Otherwise fetch from network
-        return fetch(event.request).then(networkResponse => {
-          // Cache successful responses
-          if (networkResponse && networkResponse.status === 200) {
-            // Clone the response before caching
-            cache.put(event.request, networkResponse.clone());
-            console.log('Cached:', event.request.url);
-          }
-          return networkResponse;
-        }).catch(error => {
-          console.log('Fetch failed, offline:', error);
-          // Return a basic offline response for navigation requests
-          if (event.request.mode === 'navigate') {
-            return new Response(
-              '<html><body><h1>Offline</h1><p>App is offline. Please check your connection.</p></body></html>',
-              {
-                headers: { 'Content-Type': 'text/html' }
-              }
-            );
-          }
-          throw error;
-        });
-      });
-    })
-  );
-});
-
-self.addEventListener('activate', event => {
-  console.log('Service Worker activating...');
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-      `;
-
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      
-      navigator.serviceWorker.register(swUrl)
-        .then(registration => {
-          console.log('✅ Service Worker registered successfully!');
-          console.log('Scope:', registration.scope);
-          
-          // Force update check
-          registration.update();
-        })
-        .catch(err => {
-          console.error('❌ Service Worker registration failed:', err);
-        });
-    } else {
-      console.log('Service Worker not supported or not on HTTPS');
-    }
+    // Check online status
+    setIsOnline(navigator.onLine);
+    
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const [darkMode, setDarkMode] = useState(false);
@@ -339,6 +258,14 @@ self.addEventListener('activate', event => {
         : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50'
     } p-4`}>
       <div className="max-w-6xl mx-auto">
+        {/* Online/Offline Status Banner */}
+        {!isOnline && (
+          <div className="mb-4 p-3 bg-orange-500 text-white rounded-lg flex items-center gap-2 justify-center">
+            <WifiOff className="w-5 h-5" />
+            <span className="font-semibold">You're offline - App works without internet!</span>
+          </div>
+        )}
+
         <div className="text-center mb-8 pt-6">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Moon className={`w-10 h-10 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -429,7 +356,7 @@ self.addEventListener('activate', event => {
           <div className={`mb-6 p-4 rounded-xl ${
             darkMode ? 'bg-slate-800' : 'bg-white'
           } shadow-lg`}>
-            <div className="flex items-center gap-4 justify-center">
+            <div className="flex items-center gap-4 justify-center flex-wrap">
               <label className={`font-semibold ${darkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
                 Select Date:
               </label>
@@ -547,9 +474,16 @@ self.addEventListener('activate', event => {
           <p className={`font-medium ${darkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
             May Allah accept your dhikr
           </p>
-          <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            ✅ PWA Enabled - Works Offline
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            {isOnline ? (
+              <Wifi className={`w-4 h-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+            ) : (
+              <WifiOff className={`w-4 h-4 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`} />
+            )}
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {isOnline ? 'Online - Data synced' : 'Offline - Works without internet'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
