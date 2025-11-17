@@ -1,24 +1,16 @@
 'use client';
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Moon, Star, Heart, Sparkles, RotateCcw, Minus, Plus, Sun, Calendar, ArrowRight, X } from 'lucide-react';
 
 const TasbihCounter = () => {
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
+    
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registered successfully:', registration.scope);
-          })
-          .catch(error => {
-            console.log('Service Worker registration failed:', error);
-          });
-      });
-    }
-
-    // Create and inject the Service Worker file
-    const swCode = `
+      const swCode = `
 const CACHE_NAME = 'tasbih-counter-v1';
 const urlsToCache = [
   '/',
@@ -85,32 +77,37 @@ self.addEventListener('activate', event => {
   );
   return self.clients.claim();
 });
-    `;
+      `;
 
-    // Create blob and register
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    
-    if ('serviceWorker' in navigator) {
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      
       navigator.serviceWorker.register(swUrl)
         .then(() => console.log('✅ PWA Service Worker registered - App works offline!'))
         .catch(err => console.log('Service Worker registration error:', err));
     }
   }, []);
 
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  const [showHistory, setShowHistory] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-  }, [darkMode]);
+    if (mounted) {
+      const saved = localStorage.getItem('darkMode');
+      if (saved) {
+        setDarkMode(JSON.parse(saved));
+      }
+    }
+  }, [mounted]);
 
   useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    }
+  }, [darkMode, mounted]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const link1 = document.createElement('link');
     link1.rel = 'preconnect';
     link1.href = 'https://fonts.googleapis.com';
@@ -132,7 +129,7 @@ self.addEventListener('activate', event => {
       document.head.removeChild(link2);
       document.head.removeChild(link3);
     };
-  }, []);
+  }, [mounted]);
 
   const dhikrList = [
     { id: 1, text: 'صلى اللہ علیہ وسلم', icon: Heart },
@@ -158,6 +155,7 @@ self.addEventListener('activate', event => {
   };
 
   const getPreviousDayCounts = () => {
+    if (!mounted) return {};
     const yesterday = getYesterdayDate();
     const yesterdayCounts = {};
     dhikrList.forEach(dhikr => {
@@ -194,7 +192,14 @@ self.addEventListener('activate', event => {
     });
   };
 
-  const [counts, setCounts] = useState(() => {
+  const [counts, setCounts] = useState({});
+  const [showHistory, setShowHistory] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [lastDate, setLastDate] = useState('');
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const today = getTodayDate();
     const saved = {};
     dhikrList.forEach(dhikr => {
@@ -202,17 +207,19 @@ self.addEventListener('activate', event => {
       const value = parseInt(localStorage.getItem(key)) || 0;
       saved[dhikr.id] = value;
     });
-    return saved;
-  });
-
-  const [lastDate, setLastDate] = useState(() => {
-    return localStorage.getItem('lastAccessDate') || getTodayDate();
-  });
+    setCounts(saved);
+    setSelectedDate(today);
+    
+    const savedLastDate = localStorage.getItem('lastAccessDate') || today;
+    setLastDate(savedLastDate);
+  }, [mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
+
     const today = getTodayDate();
     
-    if (lastDate !== today) {
+    if (lastDate !== today && lastDate !== '') {
       const newCounts = {};
       dhikrList.forEach(dhikr => {
         const key = `dhikr_${dhikr.id}_${today}`;
@@ -223,17 +230,21 @@ self.addEventListener('activate', event => {
       setLastDate(today);
       localStorage.setItem('lastAccessDate', today);
     }
-  }, []);
+  }, [mounted, lastDate]);
 
   useEffect(() => {
+    if (!mounted) return;
+
     const today = showHistory ? selectedDate : getTodayDate();
     Object.keys(counts).forEach(id => {
       const key = `dhikr_${id}_${today}`;
       localStorage.setItem(key, counts[id].toString());
     });
-  }, [counts, showHistory, selectedDate]);
+  }, [counts, showHistory, selectedDate, mounted]);
 
   const loadHistoryData = (date) => {
+    if (!mounted) return;
+
     const historyCounts = {};
     dhikrList.forEach(dhikr => {
       const key = `dhikr_${dhikr.id}_${date}`;
@@ -288,6 +299,17 @@ self.addEventListener('activate', event => {
       setCounts(newCounts);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <Moon className="w-16 h-16 text-emerald-600 animate-pulse mx-auto mb-4" />
+          <p className="text-emerald-700 text-xl font-semibold">Loading Tasbih Counter...</p>
+        </div>
+      </div>
+    );
+  }
 
   const isToday = selectedDate === getTodayDate();
   const isHistoryView = showHistory && !isToday;
@@ -352,7 +374,7 @@ self.addEventListener('activate', event => {
                   title="Add yesterday's count to today"
                 >
                   <ArrowRight className="w-5 h-5" />
-                  +Prev Day
+                  +Prev
                 </button>
 
                 <button
@@ -365,7 +387,7 @@ self.addEventListener('activate', event => {
                   title="Remove yesterday's count from today"
                 >
                   <X className="w-5 h-5" />
-                  -Prev Day
+                  -Prev
                 </button>
               </>
             )}
@@ -451,7 +473,7 @@ self.addEventListener('activate', event => {
                     <p className={`text-6xl font-bold mb-1 ${
                       darkMode ? 'text-emerald-400' : 'text-emerald-700'
                     }`}>
-                      {counts[dhikr.id]}
+                      {counts[dhikr.id] || 0}
                     </p>
                     <p className={`text-sm font-medium ${
                       darkMode ? 'text-emerald-300' : 'text-emerald-600'
