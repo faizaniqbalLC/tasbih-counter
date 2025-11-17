@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Moon, Star, Heart, Sparkles, RotateCcw, Minus, Plus, Sun, Calendar, ArrowRight, X } from 'lucide-react';
 
 const TasbihCounter = () => {
@@ -8,74 +9,81 @@ const TasbihCounter = () => {
   useEffect(() => {
     setMounted(true);
     
-    // Register Service Worker for PWA
-    if ('serviceWorker' in navigator) {
+    // Register Service Worker for PWA - Only on HTTPS or localhost
+    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
       const swCode = `
-const CACHE_NAME = 'tasbih-counter-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  'https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400..700&display=swap',
-  'https://fonts.gstatic.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js'
-];
+const CACHE_NAME = 'tasbih-counter-v2';
 
 self.addEventListener('install', event => {
+  console.log('Service Worker installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
-      })
-      .catch(err => console.log('Cache addAll error:', err))
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('Cache opened');
+      // Cache will be populated as resources are fetched
+      return Promise.resolve();
+    })
   );
   self.skipWaiting();
 });
 
 self.addEventListener('fetch', event => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+  
+  // Skip chrome-extension and other non-http(s) requests
+  if (!event.request.url.startsWith('http')) return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(cachedResponse => {
+        // Return cached response if found
+        if (cachedResponse) {
+          console.log('Serving from cache:', event.request.url);
+          return cachedResponse;
         }
-        return fetch(event.request).then(response => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
+
+        // Otherwise fetch from network
+        return fetch(event.request).then(networkResponse => {
+          // Cache successful responses
+          if (networkResponse && networkResponse.status === 200) {
+            // Clone the response before caching
+            cache.put(event.request, networkResponse.clone());
+            console.log('Cached:', event.request.url);
           }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
+          return networkResponse;
+        }).catch(error => {
+          console.log('Fetch failed, offline:', error);
+          // Return a basic offline response for navigation requests
+          if (event.request.mode === 'navigate') {
+            return new Response(
+              '<html><body><h1>Offline</h1><p>App is offline. Please check your connection.</p></body></html>',
+              {
+                headers: { 'Content-Type': 'text/html' }
+              }
+            );
+          }
+          throw error;
         });
-      })
-      .catch(() => {
-        return new Response('Offline - Content not available', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: new Headers({
-            'Content-Type': 'text/plain'
-          })
-        });
-      })
+      });
+    })
   );
 });
 
 self.addEventListener('activate', event => {
+  console.log('Service Worker activating...');
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (!cacheWhitelist.includes(cacheName)) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  return self.clients.claim();
 });
       `;
 
@@ -83,8 +91,18 @@ self.addEventListener('activate', event => {
       const swUrl = URL.createObjectURL(blob);
       
       navigator.serviceWorker.register(swUrl)
-        .then(() => console.log('✅ PWA Service Worker registered - App works offline!'))
-        .catch(err => console.log('Service Worker registration error:', err));
+        .then(registration => {
+          console.log('✅ Service Worker registered successfully!');
+          console.log('Scope:', registration.scope);
+          
+          // Force update check
+          registration.update();
+        })
+        .catch(err => {
+          console.error('❌ Service Worker registration failed:', err);
+        });
+    } else {
+      console.log('Service Worker not supported or not on HTTPS');
     }
   }, []);
 
