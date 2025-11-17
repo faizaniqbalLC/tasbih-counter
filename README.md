@@ -157,31 +157,4 @@ For questions or support, please open an issue on GitHub.
 بارك الله فيك (Barakallahu Feek)
 ```
 
----
-
-## 🚀 Quick Setup Instructions
-
-1. **Create project folder:**
-   ```bash
-   mkdir tasbih-counter
-   cd tasbih-counter
-   ```
-
-2. **Initialize Next.js:**
-   ```bash
-   npx create-next-app@latest . --tailwind --app --no-src-dir
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   npm install lucide-react
-   ```
-
-4. **Copy all files** from above into their respective locations
-
-5. **Run the app:**
-   ```bash
-   npm run dev
-   ```
-
 Your Tasbih Counter will be live at `http://localhost:3000`! 🎉
