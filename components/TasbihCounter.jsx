@@ -69,17 +69,18 @@ const TasbihCounter = () => {
   }, [mounted]);
 
   const dhikrList = [
-    { id: 1, text: 'صلى اللہ علیہ وسلم', icon: Heart },
-    { id: 2, text: 'دعاء ابراہیم (دُرودِ اِبراہیم)', icon: Star },
-    { id: 3, text: 'أستغفرُ اللہ', icon: Sparkles },
-    { id: 4, text: 'سُبحانَ اللہ', icon: Moon },
-    { id: 5, text: 'الحمدُ للہ', icon: Heart },
-    { id: 6, text: 'اللہُ أکبر', icon: Star },
-    { id: 7, text: 'اللَّہُمَّ أَجِرْنَا مِنَ النَّارِ', icon: Sparkles },
-    { id: 8, text: 'سُبحانَ اللہِ وَبِحَمْدِہِ، سُبحانَ اللہِ العظیم', icon: Moon },
-    { id: 9, text: 'لا إلہَ إلا اللہُ وحدَہُ لا شریكَ لہ، لہُ الملكُ ولہُ الحمدُ وہو على كلِّ شیءٍ قدیر', icon: Heart },
-    { id: 10, text: 'لا إلہَ إلا أنتَ سُبحانَكَ إني كنتُ من الظالمین', icon: Star }
-  ];
+  { id: 1, text: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ', icon: Heart },
+  { id: 2, text: 'دُعَاءُ إِبْرَاهِيمَ (الصَّلَاةُ الإِبْرَاهِيمِيَّةُ)', icon: Star },
+  { id: 3, text: 'أَسْتَغْفِرُ اللَّهَ', icon: Sparkles },
+  { id: 4, text: 'سُبْحَانَ اللَّهِ', icon: Moon },
+  { id: 5, text: 'الْحَمْدُ لِلَّهِ', icon: Heart },
+  { id: 6, text: 'اللَّهُ أَكْبَرُ', icon: Star },
+  { id: 7, text: 'اللَّهُمَّ أَجِرْنَا مِنَ النَّارِ', icon: Sparkles },
+  { id: 8, text: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ', icon: Moon },
+  { id: 9, text: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ', icon: Heart },
+  { id: 10, text: 'لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ', icon: Star }
+];
+
 
   const getTodayDate = () => {
     return new Date().toISOString().split('T')[0];
@@ -318,8 +319,7 @@ const TasbihCounter = () => {
                   }`}
                   title="Add yesterday's count to today"
                 >
-                  <ArrowRight className="w-5 h-5" />
-                  +Prev
+                  +Prev Day
                 </button>
 
                 <button
@@ -331,8 +331,7 @@ const TasbihCounter = () => {
                   }`}
                   title="Remove yesterday's count from today"
                 >
-                  <X className="w-5 h-5" />
-                  -Prev
+                  -Prev Day
                 </button>
               </>
             )}
@@ -430,7 +429,7 @@ const TasbihCounter = () => {
                   <button
                     onClick={() => decrement(dhikr.id)}
                     disabled={isHistoryView}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold shadow-md transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-1 md:gap-2 px-[6px] md:px-4 py-3 rounded-lg font-semibold shadow-md transition-all ${
                       isHistoryView
                         ? 'bg-gray-400 cursor-not-allowed text-white'
                         : 'bg-orange-500 hover:bg-orange-600 text-white transform hover:scale-105'
@@ -443,7 +442,7 @@ const TasbihCounter = () => {
                   <button
                     onClick={() => increment(dhikr.id)}
                     disabled={isHistoryView}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold shadow-md transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-1 md:gap-2 px-[6px] md:px-4 py-3 rounded-lg font-semibold shadow-md transition-all ${
                       isHistoryView
                         ? 'bg-gray-400 cursor-not-allowed text-white'
                         : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transform hover:scale-105'
@@ -456,7 +455,7 @@ const TasbihCounter = () => {
                   <button
                     onClick={() => reset(dhikr.id)}
                     disabled={isHistoryView}
-                    className={`flex items-center justify-center px-4 py-3 rounded-lg font-semibold shadow-md transition-all ${
+                    className={`flex items-center justify-center px-3 md:px-4 py-3 rounded-lg font-semibold shadow-md transition-all ${
                       isHistoryView
                         ? 'bg-gray-400 cursor-not-allowed text-white'
                         : 'bg-gray-500 hover:bg-gray-600 text-white transform hover:scale-105'
